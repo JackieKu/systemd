@@ -215,6 +215,8 @@ int main(int argc, char* argv[]) {
                 log_error("Failed to notify init system: %s", strerror(-r));
                 goto finish;
         }
+        if (r > 0 && arg_ready)
+                sleep(5);
 
         retval = r <= 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
