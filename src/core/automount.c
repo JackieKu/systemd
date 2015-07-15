@@ -756,7 +756,7 @@ static int automount_dispatch_io(sd_event_source *s, int fd, uint32_t events, vo
                 if (packet.v5_packet.pid > 0) {
                         _cleanup_free_ char *p = NULL;
 
-                        get_process_comm(packet.v5_packet.pid, &p);
+                        get_process_cmdline(packet.v5_packet.pid, 0, true, &p);
                         log_unit_info(UNIT(a)->id,
                                        "Got automount request for %s, triggered by "PID_FMT" (%s)",
                                        a->where, packet.v5_packet.pid, strna(p));
