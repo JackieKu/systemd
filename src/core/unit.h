@@ -209,6 +209,9 @@ typedef struct Unit {
         /* cgroup empty queue */
         LIST_FIELDS(Unit, cgroup_empty_queue);
 
+        /* Units with the same CGroup netclass */
+        LIST_FIELDS(Unit, cgroup_netclass);
+
         /* Target dependencies queue */
         LIST_FIELDS(Unit, target_deps_queue);
 
@@ -272,6 +275,8 @@ typedef struct Unit {
         BPFProgram *ip_bpf_egress, *ip_bpf_egress_installed;
 
         uint64_t ip_accounting_extra[_CGROUP_IP_ACCOUNTING_METRIC_MAX];
+
+        uint32_t cgroup_netclass_id;
 
         /* Low-priority event source which is used to remove watched PIDs that have gone away, and subscribe to any new
          * ones which might have appeared. */
