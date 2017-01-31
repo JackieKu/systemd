@@ -79,6 +79,8 @@ void cgroup_context_init(CGroupContext *c) {
         c->startup_blockio_weight = CGROUP_BLKIO_WEIGHT_INVALID;
 
         c->tasks_max = (uint64_t) -1;
+
+        c->netclass_type = CGROUP_NETCLASS_TYPE_NONE;
 }
 
 void cgroup_context_free_device_allow(CGroupContext *c, CGroupDeviceAllow *a) {
@@ -1034,6 +1036,17 @@ static void cgroup_context_apply(
 
         if (apply_bpf)
                 cgroup_apply_firewall(u);
+
+        if (apply_mask & CGROUP_MASK_NET_CLS) {
+                char buf[DECIMAL_STR_MAX(uint32_t)];
+
+                sprintf(buf, "%" PRIu32, u->cgroup_netclass_id);
+
+                r = cg_set_attribute("net_cls", path, "net_cls.classid", buf);
+                if (r < 0)
+                        log_full_errno(IN_SET(r, -ENOENT, -EROFS, -EACCES) ? LOG_DEBUG : LOG_WARNING, r,
+                                       "Failed to set net_cls.classid on %s: %m", path);
+        }
 }
 
 CGroupMask cgroup_context_get_mask(CGroupContext *c) {
@@ -1062,6 +1075,9 @@ CGroupMask cgroup_context_get_mask(CGroupContext *c) {
         if (c->tasks_accounting ||
             c->tasks_max != (uint64_t) -1)
                 mask |= CGROUP_MASK_PIDS;
+
+        if (c->netclass_type != CGROUP_NETCLASS_TYPE_NONE)
+                mask |= CGROUP_MASK_NET_CLS;
 
         return mask;
 }
@@ -1541,6 +1557,102 @@ static void unit_remove_from_cgroup_realize_queue(Unit *u) {
         u->in_cgroup_realize_queue = false;
 }
 
+static int unit_find_free_netclass_cgroup(Unit *u, uint32_t *ret) {
+
+        uint32_t start, i;
+        Manager *m;
+
+        assert(u);
+
+        m = u->manager;
+
+        i = start = m->cgroup_netclass_registry_last;
+
+        do {
+                i++;
+
+                if (!hashmap_get(m->cgroup_netclass_registry, UINT_TO_PTR(i))) {
+                        m->cgroup_netclass_registry_last = i;
+                        *ret = i;
+                        return 0;
+                }
+
+                if (i == UINT32_MAX)
+                        i = CGROUP_NETCLASS_FIXED_MAX;
+
+        } while (i != start);
+
+        return -ENOBUFS;
+}
+
+int unit_add_to_netclass_cgroup(Unit *u) {
+
+        CGroupContext *cc;
+        Unit *first;
+        void *key;
+        int r;
+
+        assert(u);
+
+        cc = unit_get_cgroup_context(u);
+        if (!cc)
+                return 0;
+
+        switch (cc->netclass_type) {
+        case CGROUP_NETCLASS_TYPE_NONE:
+                return 0;
+
+        case CGROUP_NETCLASS_TYPE_FIXED:
+                u->cgroup_netclass_id = cc->netclass_id;
+                break;
+
+        case CGROUP_NETCLASS_TYPE_AUTO:
+                /* Allocate a new ID in case it was requested and not done yet */
+                if (u->cgroup_netclass_id == 0) {
+                        r = unit_find_free_netclass_cgroup(u, &u->cgroup_netclass_id);
+                        if (r < 0)
+                                return r;
+
+                        log_debug("Dynamically assigned netclass cgroup id %" PRIu32 " to %s", u->cgroup_netclass_id, u->id);
+                }
+
+                break;
+        }
+
+        r = hashmap_ensure_allocated(&u->manager->cgroup_netclass_registry, &trivial_hash_ops);
+        if (r < 0)
+                return r;
+
+        key = UINT32_TO_PTR(u->cgroup_netclass_id);
+        first = hashmap_get(u->manager->cgroup_netclass_registry, key);
+
+        if (first) {
+                LIST_PREPEND(cgroup_netclass, first, u);
+                return hashmap_replace(u->manager->cgroup_netclass_registry, key, u);
+        }
+
+        return hashmap_put(u->manager->cgroup_netclass_registry, key, u);
+}
+
+int unit_remove_from_netclass_cgroup(Unit *u) {
+
+        Unit *head;
+        void *key;
+
+        assert(u);
+
+        key = UINT32_TO_PTR(u->cgroup_netclass_id);
+
+        LIST_FIND_HEAD(cgroup_netclass, u, head);
+        LIST_REMOVE(cgroup_netclass, head, u);
+
+        if (head)
+                return hashmap_replace(u->manager->cgroup_netclass_registry, key, head);
+
+        hashmap_remove(u->manager->cgroup_netclass_registry, key);
+
+        return 0;
+}
 
 /* Check if necessary controllers and attributes for a unit are in place.
  *

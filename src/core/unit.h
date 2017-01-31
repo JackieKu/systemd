@@ -231,6 +231,9 @@ struct Unit {
         /* cgroup empty queue */
         LIST_FIELDS(Unit, cgroup_empty_queue);
 
+        /* Units with the same CGroup netclass */
+        LIST_FIELDS(Unit, cgroup_netclass);
+
         /* PIDs we keep an eye on. Note that a unit might have many
          * more, but these are the ones we care enough about to
          * process SIGCHLD for */
@@ -289,6 +292,8 @@ struct Unit {
         BPFProgram *ip_bpf_egress;
 
         uint64_t ip_accounting_extra[_CGROUP_IP_ACCOUNTING_METRIC_MAX];
+
+        uint32_t cgroup_netclass_id;
 
         /* How to start OnFailure units */
         JobMode on_failure_job_mode;

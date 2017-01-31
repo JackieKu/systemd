@@ -27,6 +27,11 @@
 #include "list.h"
 #include "time-util.h"
 
+/* Maximum value for fixed (manual) net class ID assignment,
+ * and also the value at which the range of automatic assignments starts
+ */
+#define CGROUP_NETCLASS_FIXED_MAX UINT32_C(65535)
+
 typedef struct CGroupContext CGroupContext;
 typedef struct CGroupDeviceAllow CGroupDeviceAllow;
 typedef struct CGroupIODeviceWeight CGroupIODeviceWeight;
@@ -49,6 +54,17 @@ typedef enum CGroupDevicePolicy {
         _CGROUP_DEVICE_POLICY_MAX,
         _CGROUP_DEVICE_POLICY_INVALID = -1
 } CGroupDevicePolicy;
+
+typedef enum CGroupNetClassType {
+        /* Default - do not assign a net class */
+        CGROUP_NETCLASS_TYPE_NONE,
+
+        /* Automatically assign a net class */
+        CGROUP_NETCLASS_TYPE_AUTO,
+
+        /* Assign the net class that was provided by the user */
+        CGROUP_NETCLASS_TYPE_FIXED,
+} CGroupNetClassType;
 
 struct CGroupDeviceAllow {
         LIST_FIELDS(CGroupDeviceAllow, device_allow);
@@ -126,6 +142,9 @@ struct CGroupContext {
         /* Common */
         uint64_t tasks_max;
 
+        CGroupNetClassType netclass_type;
+        uint32_t netclass_id;
+
         bool delegate;
         CGroupMask delegate_controllers;
 };
@@ -179,6 +198,9 @@ int unit_watch_cgroup(Unit *u);
 void unit_add_to_cgroup_empty_queue(Unit *u);
 
 int unit_attach_pids_to_cgroup(Unit *u);
+
+int unit_add_to_netclass_cgroup(Unit *u);
+int unit_remove_from_netclass_cgroup(Unit *u);
 
 int manager_setup_cgroup(Manager *m);
 void manager_shutdown_cgroup(Manager *m, bool delete);

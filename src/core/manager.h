@@ -345,6 +345,10 @@ struct Manager {
 
         /* prefixes of e.g. RuntimeDirectory= */
         char *prefix[_EXEC_DIRECTORY_TYPE_MAX];
+
+        /* Used for NetClass=auto units */
+        Hashmap *cgroup_netclass_registry;
+        uint32_t cgroup_netclass_registry_last;
 };
 
 #define MANAGER_IS_SYSTEM(m) ((m)->unit_file_scope == UNIT_FILE_SYSTEM)
