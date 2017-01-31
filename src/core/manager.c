@@ -577,6 +577,8 @@ int manager_new(ManagerRunningAs running_as, bool test_run, Manager **_m) {
         m->have_ask_password = -EINVAL; /* we don't know */
         m->first_boot = -1;
 
+        m->cgroup_netclass_registry_last = CGROUP_NETCLASS_FIXED_MAX;
+
         m->test_run = test_run;
 
         /* Reboot immediately if the user hits C-A-D more often than 7x per 2s */
@@ -967,6 +969,8 @@ Manager* manager_free(Manager *m) {
 
         hashmap_free(m->cgroup_unit);
         set_free_free(m->unit_path_cache);
+
+        hashmap_free(m->cgroup_netclass_registry);
 
         free(m->switch_root);
         free(m->switch_root_init);
@@ -2724,7 +2728,7 @@ void manager_check_finished(Manager *m) {
 
         SET_FOREACH(u, m->startup_units, i)
                 if (u->cgroup_path)
-                        cgroup_context_apply(unit_get_cgroup_context(u), unit_get_own_mask(u), u->cgroup_path, manager_state(m));
+                        cgroup_context_apply(unit_get_cgroup_context(u), unit_get_own_mask(u), u->cgroup_path, u->cgroup_netclass_id, manager_state(m));
 }
 
 static int create_generator_dir(Manager *m, char **generator, const char *name) {
