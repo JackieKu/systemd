@@ -365,6 +365,10 @@ struct Manager {
          * multiple times on the same unit. */
         unsigned sigchldgen;
         unsigned notifygen;
+
+        /* Used for NetClass=auto units */
+        Hashmap *cgroup_netclass_registry;
+        uint32_t cgroup_netclass_registry_last;
 };
 
 #define MANAGER_IS_SYSTEM(m) ((m)->unit_file_scope == UNIT_FILE_SYSTEM)
