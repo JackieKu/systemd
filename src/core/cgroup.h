@@ -30,7 +30,7 @@
 /* Maximum value for fixed (manual) net class ID assignment,
  * and also the value at which the range of automatic assignments starts
  */
-#define CGROUP_NETCLASS_FIXED_MAX UINT32_C(65535)
+#define CGROUP_NETCLASS_FIXED_MAX UINT32_C(0x00FFFFFF)
 
 typedef struct CGroupContext CGroupContext;
 typedef struct CGroupDeviceAllow CGroupDeviceAllow;
