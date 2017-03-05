@@ -1632,14 +1632,7 @@ static int exec_child(
                                 context->protect_system,
                                 context->mount_flags);
 
-                /* If we couldn't set up the namespace this is
-                 * probably due to a missing capability. In this case,
-                 * silently proceeed. */
-                if (r == -EPERM || r == -EACCES) {
-                        log_open();
-                        log_unit_debug_errno(unit, r, "Failed to set up namespace, assuming containerized execution, ignoring: %m");
-                        log_close();
-                } else if (r < 0) {
+                if (r < 0) {
                         *exit_status = EXIT_NAMESPACE;
                         return r;
                 }
