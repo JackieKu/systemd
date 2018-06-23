@@ -340,7 +340,7 @@ int main(int argc, char *argv[]) {
         disable_coredumps();
 
         log_info("Sending SIGTERM to remaining processes...");
-        broadcast_signal(SIGTERM, true, true, arg_timeout);
+        broadcast_signal(SIGTERM, true, true, 5 * USEC_PER_SEC);
 
         log_info("Sending SIGKILL to remaining processes...");
         broadcast_signal(SIGKILL, true, false, arg_timeout);
