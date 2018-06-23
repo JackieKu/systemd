@@ -365,49 +365,49 @@ int main(int argc, char *argv[]) {
                         cg_trim(SYSTEMD_CGROUP_CONTROLLER, cgroup, false);
 
                 if (need_umount) {
-                        log_info("Unmounting file systems.");
+                        log_error("Unmounting file systems.");
                         r = umount_all(&changed);
                         if (r == 0) {
                                 need_umount = false;
                                 log_info("All filesystems unmounted.");
                         } else if (r > 0)
-                                log_info("Not all file systems unmounted, %d left.", r);
+                                log_error("Not all file systems unmounted, %d left.", r);
                         else
                                 log_error_errno(r, "Failed to unmount file systems: %m");
                 }
 
                 if (need_swapoff) {
-                        log_info("Deactivating swaps.");
+                        log_error("Deactivating swaps.");
                         r = swapoff_all(&changed);
                         if (r == 0) {
                                 need_swapoff = false;
                                 log_info("All swaps deactivated.");
                         } else if (r > 0)
-                                log_info("Not all swaps deactivated, %d left.", r);
+                                log_error("Not all swaps deactivated, %d left.", r);
                         else
                                 log_error_errno(r, "Failed to deactivate swaps: %m");
                 }
 
                 if (need_loop_detach) {
-                        log_info("Detaching loop devices.");
+                        log_error("Detaching loop devices.");
                         r = loopback_detach_all(&changed);
                         if (r == 0) {
                                 need_loop_detach = false;
                                 log_info("All loop devices detached.");
                         } else if (r > 0)
-                                log_info("Not all loop devices detached, %d left.", r);
+                                log_error("Not all loop devices detached, %d left.", r);
                         else
                                 log_error_errno(r, "Failed to detach loop devices: %m");
                 }
 
                 if (need_dm_detach) {
-                        log_info("Detaching DM devices.");
+                        log_error("Detaching DM devices.");
                         r = dm_detach_all(&changed);
                         if (r == 0) {
                                 need_dm_detach = false;
                                 log_info("All DM devices detached.");
                         } else if (r > 0)
-                                log_info("Not all DM devices detached, %d left.", r);
+                                log_error("Not all DM devices detached, %d left.", r);
                         else
                                 log_error_errno(r, "Failed to detach DM devices: %m");
                 }
